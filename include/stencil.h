@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <memory>
 #include <numbers>
+#include <string_view>
 #include <utility>
 
 namespace scr {
@@ -14,6 +15,7 @@ public:
     using size_type = std::size_t;
 
     virtual ~StencilSolver() = default;
+    virtual std::string_view name() const = 0;
     virtual void init() = 0;
     virtual void step() = 0;
     virtual void set(size_type i, size_type j, size_type k, double value) = 0;
@@ -43,6 +45,8 @@ public:
 
     NaiveStencilSolver(size_type nx, size_type ny, size_type nz, double r = 0.125) noexcept
         : nx(nx), ny(ny), nz(nz), r(r) {}
+
+    std::string_view name() const override { return "L0 naive"; }
 
     void init() override {
         const size_type total_points = (nx + 2) * (ny + 2) * (nz + 2);

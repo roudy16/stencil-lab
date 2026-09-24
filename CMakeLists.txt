@@ -37,6 +37,22 @@ FetchContent_MakeAvailable(SDL3)
 add_executable(stencil ${sources})
 target_include_directories(stencil PRIVATE include)
 target_link_libraries(stencil PRIVATE SDL3::SDL3)
+
+# build provenance for the bench header; refreshed on every configure, which the
+# just recipes run before each build
+execute_process(COMMAND git describe --always --dirty
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    OUTPUT_VARIABLE git_commit OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET)
+if(NOT git_commit)
+    set(git_commit unknown)
+endif()
+string(TOUPPER "${CMAKE_BUILD_TYPE}" build_type_upper)
+string(STRIP "${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${build_type_upper}}" build_flags)
+target_compile_definitions(stencil PRIVATE
+    "STENCIL_GIT_COMMIT=\"${git_commit}\""
+    "STENCIL_BUILD_TYPE=\"${CMAKE_BUILD_TYPE}\""
+    "STENCIL_BUILD_FLAGS=\"${build_flags}\""
+    "STENCIL_COMPILER=\"${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}\"")
 install(TARGETS stencil)
 
 enable_testing()

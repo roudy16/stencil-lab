@@ -45,27 +45,51 @@ so to change `steps` you have to give `nx ny nz` too.
 
 ### bench
 
-Runs as fast as possible from the sine-mode initial field and reports:
+Runs as fast as possible from the sine-mode initial field and prints one block, meant to be
+pasted into a log as-is:
 
 ```
-grid 512x512x512, 10 steps x 10 reps
-median 1.2345 s   p99 1.3456 s
-... GFLOP/s   ... GB/s (model)
-checksum ...
+== stencil-lab bench ==
+date      2026-09-24 20:42:44 UTC
+host      pop-os
+cpu       AMD Ryzen 9 9950X3D 16-Core Processor, 32 logical
+ran on    cpu 11 -> cpu 25 (affinity: 32 cpus)
+caches    L1d 48K  L2 1024K  L3 32768K (cpu 11)
+memory    249.3 GiB
+kernel    7.1.5-76070105-generic
+governor  powersave
+compiler  GNU 16.0.1
+build     RelWithDebInfo [-O2 -g -DNDEBUG] commit 1a7fa01-dirty
+solver    L0 naive
+grid      128x128x128, 5 steps x 5 reps
+time      median 0.0100 s   p99 0.0109 s
+rate      8.37 GFLOP/s   25.12 GB/s (model)
+checksum  550107.0359960401
 ```
 
-- **median / p99**: wall time of one rep (`steps` timesteps), over `reps` runs.
-- **GFLOP/s**: 8 FLOPs per point update.
-- **GB/s (model)**: 24 bytes per point update (read `u`, write `u_next`, write-allocate).
-  This is a lower bound on traffic, so the true DRAM bandwidth can be higher.
+- **ran on**: the CPU at the start and end of the timed runs, and how many CPUs the process
+  was allowed on. Differing CPUs mean the thread migrated mid-run.
+- **caches**: for the starting CPU. The machine info is read from Linux `/proc` and `/sys`,
+  and anything missing prints `unknown`.
+- **build / commit**: captured at configure time. `-dirty` means uncommitted changes were
+  built.
+- **time**: median and p99 wall time of one rep (`steps` timesteps), over `reps` runs.
+- **rate**: 8 FLOPs per point update. The GB/s figure is a model of 24 bytes per point update
+  (read `u`, write `u_next`, write-allocate). It's a lower bound on traffic, so the true DRAM
+  bandwidth can be higher.
 - **checksum**: sum of the final interior. Compare it across levels with the same arguments.
 
 Keep grids well past L3 (128 MB on the 9950X3D) for DRAM-bound numbers: 512³ is ~1 GB per
 buffer. Small grids measure cache bandwidth instead.
 
+**Pin the run to one CPU** for comparable numbers. On the 9950X3D the two CCDs have different
+L3 sizes (cpus 0–7 and 16–23 have 96 MB; 8–15 and 24–31 have 32 MB), and an unpinned run can
+migrate between them:
+
 ```sh
-just run-release bench                    # 512³ defaults
-just run-release bench 256 256 256 20 15  # smaller grid, more steps and reps
+just build-release
+taskset -c 2 ./build-release/stencil bench                    # 512³ defaults, pinned
+taskset -c 2 ./build-release/stencil bench 256 256 256 20 15  # smaller grid, more steps and reps
 ```
 
 ### visual
