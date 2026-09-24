@@ -15,21 +15,23 @@ with a shared measurement harness.
 ```sh
 just build   # configure + compile
 just test    # correctness tests (constant field, exact sine-mode decay)
-just clean   # remove build/
+just clean   # remove build/ and build-release/
 ```
 
-The default build type is **Debug (`-O0`)**. Benchmark numbers from it are meaningless;
-configure once with an optimized type and the cache keeps it for later `just` runs:
+`build/` is **Debug (`-O0`)**, for tests and gdb. Benchmark numbers from it are meaningless.
+The `-release` recipes build **RelWithDebInfo** (`-O2 -g`, frame pointers for perf) into a
+separate `build-release/`:
 
 ```sh
-cmake -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo   # -O2 -g, frame pointers for perf
-cmake -B build -DCMAKE_BUILD_TYPE=Release          # -O3
+just build-release
+just run-release bench 512 512 512
 ```
 
 ## Run
 
 ```sh
-just run [bench|visual] [nx ny nz steps reps]
+just run [bench|visual] [nx ny nz steps reps]           # Debug build
+just run-release [bench|visual] [nx ny nz steps reps]   # RelWithDebInfo build
 ```
 
 The mode defaults to `bench`. All numbers must be positive integers. Arguments go by position,
@@ -62,8 +64,8 @@ Keep grids well past L3 (128 MB on the 9950X3D) for DRAM-bound numbers: 512³ is
 buffer. Small grids measure cache bandwidth instead.
 
 ```sh
-just run bench                    # 512³ defaults
-just run bench 256 256 256 20 15  # smaller grid, more steps and reps
+just run-release bench                    # 512³ defaults
+just run-release bench 256 256 256 20 15  # smaller grid, more steps and reps
 ```
 
 ### visual

@@ -15,6 +15,11 @@ setup:
 build: setup
     cmake --build build
 
+# compile the RelWithDebInfo build (-O2 -g, frame pointers) into build-release/
+build-release:
+    cmake -B build-release -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo
+    cmake --build build-release
+
 # run tests (ctest)
 test: build
     ctest --test-dir build --output-on-failure
@@ -22,6 +27,10 @@ test: build
 # run main exe
 run *args: build
     ./build/stencil "$@"
+
+# run main exe from the RelWithDebInfo build; use this for benchmark numbers
+run-release *args: build-release
+    ./build-release/stencil "$@"
 
 # debug main exe under gdb: just debug [args...]
 debug *args: build
@@ -36,7 +45,7 @@ format:
 install: build
     cmake --install build
 
-# remove the build directory
+# remove the build directories
 clean:
-    rm -rf build compile_commands.json
+    rm -rf build build-release compile_commands.json
 
