@@ -3,6 +3,8 @@
 A 3D 7-point Jacobi stencil (heat diffusion on a regular grid), built up level by level
 with a shared measurement harness.
 
+![visual mode: a 64³ hot cube diffusing](assets/stencil_lab00.png)
+
 ## Requirements
 
 - `g++-16` (set in `CMakeLists.txt`), CMake ≥ 3.20, Ninja, [`just`](https://github.com/casey/just)
