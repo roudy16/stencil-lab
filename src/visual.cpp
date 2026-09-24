@@ -9,6 +9,7 @@
 #include <SDL3/SDL.h>
 
 #include "modes.h"
+#include "stencil.h"
 
 namespace {
 
