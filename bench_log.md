@@ -1,4 +1,35 @@
+## General stats for my office desktop
+
+== STREAM ==
+<comments>
+Memory-bandwidth ceiling for the stencil. McCalpin stream.c 5.10, arrays of
+200M doubles (1.6 GB each, >> 128 MB L3), 20 iterations; rates are STREAM's
+best-of-20. STREAM counts 24 B/elt for Triad and excludes write-allocate; the
+real DRAM traffic is 32 B/elt, so real Triad bandwidth ~= 31.6 * 4/3 ~= 42 GB/s.
+Multi-threaded Triad doesn't scale past 1 thread: DRAM, not the core or the
+CCD link, is the limit (8T on one CCD == 8T split across CCDs).
+</comments>
+date      2026-09-24 20:38 UTC
+host      pop-os
+cpu       AMD Ryzen 9 9950X3D 16-Core Processor, 32 logical
+memory    249.3 GiB
+governor  powersave
+compiler  GNU 16.0.1, -O3 -march=native -fopenmp -mcmodel=medium
+config                    Copy MB/s   Triad MB/s
+1T cpu 2  (96 MB L3)        31653       31633
+1T cpu 2  (repeat)          31059       31668
+1T cpu 27 (32 MB L3)        31172       31342
+8T cpus 0-7   (CCD0)        40873       30885
+8T cpus 8-15  (CCD1)        41337       30891
+8T cpus 0-3,8-11 (split)    41103       30608
+16T one per core            39986       30247
+32T all SMT                 26953       29590
+triad     ~31.6 GB/s single thread (STREAM counting), ~42 GB/s real with write-allocate
+
+## Stencil benchmarks run my office desktop
+
 == stencil-lab bench ==
+
 <comments>
 This is the baseline.
 </comments>

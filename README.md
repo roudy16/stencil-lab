@@ -92,6 +92,21 @@ taskset -c 2 ./build-release/stencil bench                    # 512³ defaults, 
 taskset -c 2 ./build-release/stencil bench 256 256 256 20 15  # smaller grid, more steps and reps
 ```
 
+### stream
+
+Measures the machine's memory-bandwidth ceiling with McCalpin's STREAM, run once per machine.
+The first run downloads `stream.c` into `build/stream/`. It prints a paste-able block with one
+single-thread run pinned to `cpu` and one run with a thread per physical core.
+
+```sh
+just stream               # 1T on cpu 0, 200M-double (1.6 GB) arrays
+just stream 27            # pin the 1T run to the CPU your bench ran on
+just stream 2 800000000   # bigger arrays: needed once total L3 exceeds ~400 MB (4x rule)
+```
+
+STREAM's rates leave out write-allocate traffic, but the stencil's 24 B/point model includes
+it. Multiply Triad by 4/3 before comparing it with the bench's GB/s.
+
 ### visual
 
 Opens an SDL3 window showing a hot cube diffusing out through cold (zero) boundaries, drawn
