@@ -11,7 +11,8 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS Debug Release RelWithDebInfo MinSizeRel)
 
-add_compile_options(-Wall -Wextra -Werror=return-type -Wno-interference-size)
+# CXX-only so the fetched SDL3 (C) builds with its own flags
+add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wall$<SEMICOLON>-Wextra$<SEMICOLON>-Werror=return-type$<SEMICOLON>-Wno-interference-size>)
 # RelWithDebInfo is the profiling config: -O2 -g plus frame pointers so perf
 # (and CLion's profiler) can walk the stack
 add_compile_options($<$<CONFIG:RelWithDebInfo>:-fno-omit-frame-pointer>)
@@ -19,8 +20,23 @@ add_compile_options($<$<CONFIG:RelWithDebInfo>:-fno-omit-frame-pointer>)
 file(GLOB sources CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/src/*.cpp)
 file(GLOB includes CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/include/*.h)
 
-add_executable(stencil ${CMAKE_SOURCE_DIR}/src/main.cpp)
+# SDL3 is not packaged for Ubuntu/Pop!_OS 24.04, so the build fetches a pinned
+# release (same pin as soundfog)
+include(FetchContent)
+set(SDL_TEST_LIBRARY OFF CACHE BOOL "" FORCE)
+set(SDL_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(SDL_INSTALL OFF CACHE BOOL "" FORCE)
+FetchContent_Declare(SDL3
+    GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
+    GIT_TAG release-3.4.14
+    GIT_SHALLOW TRUE
+    GIT_PROGRESS TRUE
+)
+FetchContent_MakeAvailable(SDL3)
+
+add_executable(stencil ${sources})
 target_include_directories(stencil PRIVATE include)
+target_link_libraries(stencil PRIVATE SDL3::SDL3)
 install(TARGETS stencil)
 
 enable_testing()

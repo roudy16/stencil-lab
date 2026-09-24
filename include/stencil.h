@@ -100,7 +100,7 @@ private:
 };
 
 // Lowest sine mode with zero boundaries: an exact eigenvector of the discrete update.
-void fill_sine_mode(const LabContext& ctx) {
+inline void fill_sine_mode(const LabContext& ctx) {
     using std::numbers::pi;
     for (std::size_t k = 1; k <= ctx.nz; ++k)
         for (std::size_t j = 1; j <= ctx.ny; ++j)
@@ -108,6 +108,18 @@ void fill_sine_mode(const LabContext& ctx) {
                 ctx.solver.set(i, j, k,
                                std::sin(pi * i / (ctx.nx + 1)) * std::sin(pi * j / (ctx.ny + 1)) *
                                    std::sin(pi * k / (ctx.nz + 1)));
+}
+
+// Centered cube at 1.0 in a zero field with zero boundaries; spreads, then drains out the faces.
+inline void fill_hot_cube(const LabContext& ctx) {
+    auto is_hot = [](std::size_t index, std::size_t n) {
+        return index > 3 * n / 8 && index <= 5 * n / 8;
+    };
+    for (std::size_t k = 1; k <= ctx.nz; ++k)
+        for (std::size_t j = 1; j <= ctx.ny; ++j)
+            for (std::size_t i = 1; i <= ctx.nx; ++i)
+                ctx.solver.set(i, j, k,
+                               is_hot(i, ctx.nx) && is_hot(j, ctx.ny) && is_hot(k, ctx.nz) ? 1.0 : 0.0);
 }
 
 // Per-step decay factor of fill_sine_mode's field.

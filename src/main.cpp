@@ -1,63 +1,34 @@
-#include <algorithm>
-#include <chrono>
-#include <cmath>
 #include <cstdlib>
+#include <exception>
 #include <print>
-#include <vector>
+#include <string_view>
 
+#include "modes.h"
 #include "stencil.h"
 
 using namespace std;
 
-void run(const scr::LabContext& ctx) {
-    auto& solver = ctx.solver;
-    const size_t nx = ctx.nx;
-    const size_t ny = ctx.ny;
-    const size_t nz = ctx.nz;
-    const size_t steps = ctx.steps;
-    const size_t reps = ctx.reps;
-
-    ctx.solver.init();
-    scr::fill_sine_mode(ctx);
-
-    auto run_steps = [&] {
-        const auto start = chrono::steady_clock::now();
-        for (size_t s = 0; s < steps; ++s)
-            solver.step();
-        return chrono::duration<double>(chrono::steady_clock::now() - start).count();
-    };
-
-    run_steps(); // warmup: page faults and cache state
-    vector<double> step_times(reps);
-    for (auto& t : step_times)
-        t = run_steps();
-    ranges::sort(step_times);
-
-    const double median = step_times[reps / 2];
-    const double p99 = step_times[static_cast<size_t>(ceil(0.99 * reps)) - 1];
-    const double point_updates = static_cast<double>(nx * ny * nz * steps);
-    constexpr double flops_per_point = 8.0;  // 6 adds + 2 muls
-    constexpr double bytes_per_point = 24.0; // read u, write u_next, write-allocate on u_next
-
-    println("grid {}x{}x{}, {} steps x {} reps", nx, ny, nz, steps, reps);
-    println("median {:.4f} s   p99 {:.4f} s", median, p99);
-    println("{:.2f} GFLOP/s   {:.2f} GB/s (model)", point_updates * flops_per_point / median / 1e9,
-            point_updates * bytes_per_point / median / 1e9);
-    println("checksum {:.17g}", solver.interior_sum());
-}
-
 int main(int argc, char** argv) {
+    const string_view mode = argc > 1 ? argv[1] : "bench";
+    const bool visual = mode == "visual";
+    if (!visual && mode != "bench") {
+        println(stderr, "usage: {} [bench|visual] [nx ny nz steps reps]  (all positive integers)", argv[0]);
+        return 1;
+    }
+
     const auto arg_or = [&](int position, size_t fallback) {
         return argc > position ? strtoull(argv[position], nullptr, 10) : fallback;
     };
-    const size_t nx = arg_or(1, 512);
-    const size_t ny = arg_or(2, 512);
-    const size_t nz = arg_or(3, 512);
-    const size_t steps = arg_or(4, 10);
-    const size_t reps = arg_or(5, 10);
+    // visual: steps is steps per frame, reps is unused; the grid is small enough to redraw every frame
+    const size_t default_n = visual ? 64 : 512;
+    const size_t nx = arg_or(2, default_n);
+    const size_t ny = arg_or(3, default_n);
+    const size_t nz = arg_or(4, default_n);
+    const size_t steps = arg_or(5, visual ? 4 : 10);
+    const size_t reps = arg_or(6, 10);
 
     if (nx == 0 || ny == 0 || nz == 0 || steps == 0 || reps == 0) {
-        println(stderr, "usage: {} [nx ny nz steps reps]  (all positive integers)", argv[0]);
+        println(stderr, "usage: {} [bench|visual] [nx ny nz steps reps]  (all positive integers)", argv[0]);
         return 1;
     }
 
@@ -70,7 +41,15 @@ int main(int argc, char** argv) {
         .steps = steps,
         .reps = reps,
     };
-    run(ctx);
 
+    try {
+        if (visual)
+            scr::run_visual(ctx);
+        else
+            scr::run_benchmark(ctx);
+    } catch (const exception& e) {
+        println(stderr, "{} mode failed: {}", mode, e.what());
+        return 1;
+    }
     return 0;
 }
