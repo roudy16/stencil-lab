@@ -31,7 +31,8 @@ using WindowPtr = std::unique_ptr<SDL_Window, decltype(&SDL_DestroyWindow)>;
 using RendererPtr = std::unique_ptr<SDL_Renderer, decltype(&SDL_DestroyRenderer)>;
 
 constexpr std::size_t max_voxels_per_axis = 48;
-// Brightness knobs: additive blending sums every voxel along a line of sight, so alpha must stay low.
+// Brightness knobs: additive blending sums every voxel along a line of sight, so alpha must stay
+// low.
 constexpr float voxel_alpha = 0.2f;
 constexpr double visible_threshold = 1e-3;
 constexpr double tilt_radians = 0.45;
@@ -101,8 +102,8 @@ void scr::run_visual(const LabContext& ctx) {
         int width = 0, height = 0;
         SDL_GetRenderOutputSize(renderer.get(), &width, &height);
         const double yaw = spin_radians_per_second * static_cast<double>(SDL_GetTicks()) / 1000.0;
-        const Camera camera{0.5f * width, 0.5f * height, 0.55f * std::min(width, height), std::cos(yaw),
-                            std::sin(yaw)};
+        const Camera camera{0.5f * width, 0.5f * height, 0.55f * std::min(width, height),
+                            std::cos(yaw), std::sin(yaw)};
         const float half_size = 0.5f * camera.scale * static_cast<float>(stride / longest_axis);
 
         vertices.clear();
@@ -115,8 +116,8 @@ void scr::run_visual(const LabContext& ctx) {
                     peak = std::max(peak, temperature);
                     if (temperature < visible_threshold)
                         continue;
-                    const SDL_FPoint p = camera.project(normalized(i, ctx.nx), normalized(j, ctx.ny),
-                                                        normalized(k, ctx.nz));
+                    const SDL_FPoint p = camera.project(
+                        normalized(i, ctx.nx), normalized(j, ctx.ny), normalized(k, ctx.nz));
                     const SDL_FColor color = heat_color(temperature);
                     const int first = static_cast<int>(vertices.size());
                     vertices.push_back({{p.x - half_size, p.y - half_size}, color, {}});
@@ -134,15 +135,18 @@ void scr::run_visual(const LabContext& ctx) {
         // untextured geometry blends with the draw blend mode; additive means no depth sort
         SDL_SetRenderDrawBlendMode(renderer.get(), SDL_BLENDMODE_ADD);
         if (!indices.empty() &&
-            !SDL_RenderGeometry(renderer.get(), nullptr, vertices.data(), static_cast<int>(vertices.size()),
-                                indices.data(), static_cast<int>(indices.size())))
+            !SDL_RenderGeometry(renderer.get(), nullptr, vertices.data(),
+                                static_cast<int>(vertices.size()), indices.data(),
+                                static_cast<int>(indices.size())))
             throw_sdl_error("SDL_RenderGeometry");
 
         SDL_SetRenderDrawBlendMode(renderer.get(), SDL_BLENDMODE_NONE);
         SDL_SetRenderDrawColor(renderer.get(), 90, 90, 110, 255);
         // corner bits 0/1/2 pick the -/+ face on x/y/z; box edges join corners differing in one bit
         auto box_corner = [&](int bits) {
-            auto face = [&](int bit, std::size_t n) { return (bits & bit ? 0.5 : -0.5) * n / longest_axis; };
+            auto face = [&](int bit, std::size_t n) {
+                return (bits & bit ? 0.5 : -0.5) * n / longest_axis;
+            };
             return camera.project(face(1, ctx.nx), face(2, ctx.ny), face(4, ctx.nz));
         };
         for (int corner = 0; corner < 8; ++corner)
@@ -154,8 +158,8 @@ void scr::run_visual(const LabContext& ctx) {
                 }
 
         SDL_SetRenderDrawColor(renderer.get(), 220, 220, 220, 255);
-        const std::string status = std::format("{}x{}x{}  step {}  peak {:.4f}  (esc quits)", ctx.nx,
-                                               ctx.ny, ctx.nz, steps_taken, peak);
+        const std::string status = std::format("{}x{}x{}  step {}  peak {:.4f}  (esc quits)",
+                                               ctx.nx, ctx.ny, ctx.nz, steps_taken, peak);
         SDL_RenderDebugText(renderer.get(), 10.0f, 10.0f, status.c_str());
         SDL_RenderPresent(renderer.get());
     }

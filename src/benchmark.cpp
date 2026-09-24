@@ -31,7 +31,8 @@ string proc_field(const string& path, string_view key) {
         if (!line.starts_with(key))
             continue;
         const auto colon = line.find(':');
-        const auto value = colon == string::npos ? string::npos : line.find_first_not_of(" \t", colon + 1);
+        const auto value =
+            colon == string::npos ? string::npos : line.find_first_not_of(" \t", colon + 1);
         return value == string::npos ? "" : line.substr(value);
     }
     return "";
@@ -54,7 +55,8 @@ string cache_sizes(int cpu) {
             break;
         const string type = first_line(dir + "type");
         if (type != "Instruction")
-            caches.push_back(format("L{}{} {}", level, type == "Data" ? "d" : "", first_line(dir + "size")));
+            caches.push_back(
+                format("L{}{} {}", level, type == "Data" ? "d" : "", first_line(dir + "size")));
     }
     return or_unknown(caches | views::join_with("  "sv) | ranges::to<string>());
 }
@@ -100,22 +102,27 @@ void scr::run_benchmark(const LabContext& ctx) {
 
     // One paste-able block: provenance first, then results.
     println("== stencil-lab bench ==");
-    println("date      {:%Y-%m-%d %H:%M:%S} UTC", chrono::floor<chrono::seconds>(chrono::system_clock::now()));
+    println("date      {:%Y-%m-%d %H:%M:%S} UTC",
+            chrono::floor<chrono::seconds>(chrono::system_clock::now()));
     println("host      {}", or_unknown(first_line("/proc/sys/kernel/hostname")));
     println("cpu       {}, {} logical", or_unknown(proc_field("/proc/cpuinfo", "model name")),
             thread::hardware_concurrency());
-    println("ran on    cpu {} -> cpu {} (affinity: {} cpus)", start_cpu, end_cpu, allowed_cpu_count());
+    println("ran on    cpu {} -> cpu {} (affinity: {} cpus)", start_cpu, end_cpu,
+            allowed_cpu_count());
     println("caches    {} (cpu {})", cache_sizes(start_cpu), start_cpu);
     println("memory    {}", memory_total());
     println("kernel    {}", or_unknown(first_line("/proc/sys/kernel/osrelease")));
-    println("governor  {}", or_unknown(first_line(
-                                  format("/sys/devices/system/cpu/cpu{}/cpufreq/scaling_governor", start_cpu))));
+    println("governor  {}",
+            or_unknown(first_line(
+                format("/sys/devices/system/cpu/cpu{}/cpufreq/scaling_governor", start_cpu))));
     println("compiler  {}", STENCIL_COMPILER);
-    println("build     {} [{}] commit {}", STENCIL_BUILD_TYPE, STENCIL_BUILD_FLAGS, STENCIL_GIT_COMMIT);
+    println("build     {} [{}] commit {}", STENCIL_BUILD_TYPE, STENCIL_BUILD_FLAGS,
+            STENCIL_GIT_COMMIT);
     println("solver    {}", solver.name());
     println("grid      {}x{}x{}, {} steps x {} reps", nx, ny, nz, steps, reps);
     println("time      median {:.4f} s   p99 {:.4f} s", median, p99);
-    println("rate      {:.2f} GFLOP/s   {:.2f} GB/s (model)", point_updates * flops_per_point / median / 1e9,
+    println("rate      {:.2f} GFLOP/s   {:.2f} GB/s (model)",
+            point_updates * flops_per_point / median / 1e9,
             point_updates * bytes_per_point / median / 1e9);
     println("checksum  {:.17g}", solver.interior_sum());
 }
