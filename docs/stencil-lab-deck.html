@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="en" data-theme="wave">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>stencil-lab: week 5</title>
+<link rel="stylesheet" href="zencode/tokens.css">
+<link rel="stylesheet" href="zencode/bundle.css">
+<style>
+  html, body { height: 100%; background: var(--surface-sunk); }
+  .viewport { height: 100%; display: grid; place-items: center; }
+  .zc-deck { width: min(100vw, calc(100vh * 16 / 9)); }
+  .shot { display: block; height: calc(var(--zc-u) * 680); width: auto; border-radius: calc(var(--zc-u) * 12);
+    box-shadow: 0 0 0 1px var(--line); justify-self: end; }
+  .stack { display: grid; gap: calc(var(--zc-u) * 32); align-content: start; }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: calc(var(--zc-u) * 32); }
+  .keys { position: absolute; right: calc(var(--zc-u) * 96); bottom: calc(var(--zc-u) * 48); }
+</style>
+</head>
+<body>
+<div class="viewport">
+<div class="zc-deck" id="deck">
+
+  <section class="zc-slide" aria-label="Title">
+    <div class="zc-frame zc-frame--end">
+      <p class="zc-kicker">stencil-lab · HPC pivot, week 5</p>
+      <h1 class="zc-display">Heat diffusion, measured in <em>bytes</em></h1>
+      <p class="zc-lede">A 3D 7-point Jacobi stencil, built up level by level against the memory-bandwidth ceiling.</p>
+    </div>
+    <p class="zc-caption keys">→ / space next · ← back · t theme</p>
+  </section>
+
+  <section class="zc-slide zc-slide--section" aria-label="Part 1">
+    <div class="zc-frame zc-frame--center">
+      <p class="zc-kicker">Part 1</p>
+      <h2 class="zc-display">The kernel</h2>
+    </div>
+  </section>
+
+  <section class="zc-slide" aria-label="The update">
+    <div class="zc-frame">
+      <div><p class="zc-kicker">Level 0 · naive</p><h2 class="zc-title">One update, eight <em>flops</em></h2></div>
+      <div class="zc-cols zc-cols--wide-right">
+        <div class="stack">
+          <p class="zc-body">Each interior point becomes a weighted sum of itself and its six face neighbours. Two buffers, swapped every step; a one-cell halo holds the boundary.</p>
+          <ul class="zc-list">
+            <li><code>x</code> innermost: neighbours in <code>i</code> share cache lines</li>
+            <li><code>8</code> FLOPs per point: 6 adds, 2 muls</li>
+            <li><code>24</code> B per point: read, write, write-allocate</li>
+            <li>≈ <span class="zc-hl">0.33 FLOP/byte</span>: bandwidth-bound</li>
+          </ul>
+        </div>
+        <figure class="zc-code zc-code--numbered">
+          <figcaption class="zc-code__bar"><span>include/stencil.h</span><span class="zc-lang">c++</span></figcaption>
+          <pre><code><span class="ln"><span class="k">for</span> <span class="pu">(</span><span class="ty">size_type</span> <span class="id">k</span> <span class="op">=</span> <span class="n">1</span><span class="pu">;</span> <span class="id">k</span> <span class="op">&lt;=</span> <span class="id">nz</span><span class="pu">;</span> <span class="op">++</span><span class="id">k</span><span class="pu">)</span></span><span class="ln">  <span class="k">for</span> <span class="pu">(</span><span class="ty">size_type</span> <span class="id">j</span> <span class="op">=</span> <span class="n">1</span><span class="pu">;</span> <span class="id">j</span> <span class="op">&lt;=</span> <span class="id">ny</span><span class="pu">;</span> <span class="op">++</span><span class="id">j</span><span class="pu">)</span></span><span class="ln" data-hl="1">    <span class="k">for</span> <span class="pu">(</span><span class="ty">size_type</span> <span class="id">i</span> <span class="op">=</span> <span class="n">1</span><span class="pu">;</span> <span class="id">i</span> <span class="op">&lt;=</span> <span class="id">nx</span><span class="pu">;</span> <span class="op">++</span><span class="id">i</span><span class="pu">) {</span></span><span class="ln">      <span class="k">const</span> <span class="ty">size_type</span> <span class="id">c</span> <span class="op">=</span> <span class="fn">index</span><span class="pu">(</span><span class="id">i</span><span class="pu">,</span> <span class="id">j</span><span class="pu">,</span> <span class="id">k</span><span class="pu">);</span></span><span class="ln" data-hl="2">      <span class="k">const double</span> <span class="id">sum</span> <span class="op">=</span> <span class="id">u</span><span class="pu">[</span><span class="id">c</span> <span class="op">-</span> <span class="n">1</span><span class="pu">]</span> <span class="op">+</span> <span class="id">u</span><span class="pu">[</span><span class="id">c</span> <span class="op">+</span> <span class="n">1</span><span class="pu">]</span></span><span class="ln" data-hl="2">        <span class="op">+</span> <span class="id">u</span><span class="pu">[</span><span class="id">c</span> <span class="op">-</span> <span class="id">y_stride</span><span class="pu">]</span> <span class="op">+</span> <span class="id">u</span><span class="pu">[</span><span class="id">c</span> <span class="op">+</span> <span class="id">y_stride</span><span class="pu">]</span></span><span class="ln" data-hl="2">        <span class="op">+</span> <span class="id">u</span><span class="pu">[</span><span class="id">c</span> <span class="op">-</span> <span class="id">z_stride</span><span class="pu">]</span> <span class="op">+</span> <span class="id">u</span><span class="pu">[</span><span class="id">c</span> <span class="op">+</span> <span class="id">z_stride</span><span class="pu">];</span></span><span class="ln" data-hl="3">      <span class="id">u_next</span><span class="pu">[</span><span class="id">c</span><span class="pu">]</span> <span class="op">=</span> <span class="id">center_weight</span> <span class="op">*</span> <span class="id">u</span><span class="pu">[</span><span class="id">c</span><span class="pu">]</span> <span class="op">+</span> <span class="id">r</span> <span class="op">*</span> <span class="id">sum</span><span class="pu">;</span></span><span class="ln">    <span class="pu">}</span></span><span class="ln" data-hl="4"><span class="id">std</span><span class="pu">::</span><span class="fn">swap</span><span class="pu">(</span><span class="id">current</span><span class="pu">,</span> <span class="id">next</span><span class="pu">);</span></span></code></pre>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <section class="zc-slide" aria-label="Correctness">
+    <div class="zc-frame">
+      <div><p class="zc-kicker">Tests</p><h2 class="zc-title">Correct before <em>fast</em></h2></div>
+      <div class="zc-cols">
+        <ul class="zc-list">
+          <li>A constant field stays constant, boundary included</li>
+          <li>A sine mode decays by exactly <code>λᵀ</code>, the discrete eigenvalue</li>
+          <li>Tests run on <code>30×40×50</code>, so a swapped stride can't hide behind a cube's symmetry</li>
+        </ul>
+        <div class="stack">
+          <aside class="zc-callout zc-callout--insight"><span class="zc-callout__label">Checked</span><p>A build with a deliberately wrong stride failed the sine-mode test. The test catches the bug it was written for.</p></aside>
+          <aside class="zc-callout"><span class="zc-callout__label">Note</span><p>Every later level must match Level 0's checksum. A fast wrong answer is worth nothing.</p></aside>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="zc-slide" aria-label="Provenance">
+    <div class="zc-frame">
+      <div><p class="zc-kicker">Harness</p><h2 class="zc-title">Every run carries its <em>provenance</em></h2></div>
+      <div class="zc-cols zc-cols--wide-right">
+        <div class="stack">
+          <p class="zc-body"><code>bench</code> prints one block to paste into the log: machine, the CPU it ran on, that CPU's caches, build, commit and results.</p>
+          <p class="zc-body">Median and p99, never the mean.</p>
+        </div>
+        <figure class="zc-code zc-code--small">
+          <figcaption class="zc-code__bar"><span>just run-release bench</span><span class="zc-lang">terminal</span></figcaption>
+          <pre><code><span class="ln out">== stencil-lab bench ==</span><span class="ln out">cpu       AMD Ryzen 9 9950X3D 16-Core Processor, 32 logical</span><span class="ln out">ran on    cpu 27 -&gt; cpu 27 (affinity: 32 cpus)</span><span class="ln out">caches    L1d 48K  L2 1024K  L3 32768K (cpu 27)</span><span class="ln out">governor  powersave</span><span class="ln out">compiler  GNU 16.0.1</span><span class="ln out">build     RelWithDebInfo [-O2 -g -DNDEBUG] commit 8bdd63a</span><span class="ln out">solver    L0 naive</span><span class="ln out">grid      512x512x512, 10 steps x 10 reps</span><span class="ln out">time      median 1.5150 s   p99 1.5256 s</span><span class="ln out">rate      <span class="zc-hl">7.09 GFLOP/s   21.26 GB/s</span> (model)</span><span class="ln out">checksum  34778955.772421293</span></code></pre>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <section class="zc-slide" aria-label="Visual mode">
+    <div class="zc-frame">
+      <div><p class="zc-kicker">Visual mode · SDL3</p><h2 class="zc-title">Watching the heat <em>leave</em></h2></div>
+      <div class="zc-cols">
+        <div class="stack">
+          <p class="zc-body">The same solver drives an SDL3 window: a hot cube spreads, then drains out through the cold faces.</p>
+          <ul class="zc-list">
+            <li>Rotating point cloud with additive blending, so no depth sort</li>
+            <li>Shares the solver and initial conditions with <code>bench</code></li>
+          </ul>
+        </div>
+        <img class="shot" src="../assets/stencil_lab00.png" alt="Visual mode at step 412: a red, spherical glow of heat centred in a wireframe cube">
+      </div>
+    </div>
+  </section>
+
+  <section class="zc-slide zc-slide--section" aria-label="Part 2">
+    <div class="zc-frame zc-frame--center">
+      <p class="zc-kicker">Part 2</p>
+      <h2 class="zc-display">Measurements</h2>
+    </div>
+  </section>
+
+  <section class="zc-slide" aria-label="Baseline">
+    <div class="zc-frame">
+      <div><p class="zc-kicker">Level 0 baseline · 512³ · pinned to cpu 27</p><h2 class="zc-title">Naive already moves <em>21</em> GB/s</h2></div>
+      <div class="stats">
+        <div class="zc-stat zc-stat--tile">
+          <div class="zc-stat__value">1.52<small>s</small></div>
+          <div class="zc-stat__label">median for 10 timesteps of 134 M points</div>
+        </div>
+        <div class="zc-stat zc-stat--tile">
+          <div class="zc-stat__value is-accent">7.09</div>
+          <div class="zc-stat__label">GFLOP/s on one core</div>
+        </div>
+        <div class="zc-stat zc-stat--tile">
+          <div class="zc-stat__value">21.3<small>GB/s</small></div>
+          <div class="zc-stat__label">by the 24 B/point model, a lower bound on real traffic</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="zc-slide" aria-label="Loop order">
+    <div class="zc-frame">
+      <div><p class="zc-kicker">Experiment · loop order</p><h2 class="zc-title">The wrong loop order costs <em>8×</em></h2></div>
+      <table class="zc-table">
+        <caption>512³, 10 steps × 10 reps, RelWithDebInfo. Both runs give the same checksum to the last digit.</caption>
+        <thead><tr><th>Solver</th><th>Innermost axis</th><th class="num">Median (s)</th><th class="num">GFLOP/s</th><th class="num">GB/s (model)</th><th class="num">Δ time</th></tr></thead>
+        <tbody>
+          <tr class="is-hl"><td>L0 naive</td><td><span class="mono">x</span> (stride 8 B)</td><td class="num best">1.515</td><td class="num best">7.09</td><td class="num best">21.26</td><td class="num">—</td></tr>
+          <tr><td>L0 naive, bad loop</td><td><span class="mono">z</span> (stride ≈ 2.1 MB)</td><td class="num">12.000</td><td class="num">0.89</td><td class="num">2.68</td><td class="num zc-down">+692%</td></tr>
+        </tbody>
+      </table>
+      <aside class="zc-callout"><span class="zc-callout__label">Why</span><p>With <code>z</code> innermost, each step jumps a whole 514×514 plane, so every load pulls a fresh 64 B cache line and uses 8 B of it.</p></aside>
+    </div>
+  </section>
+
+  <section class="zc-slide" aria-label="STREAM">
+    <div class="zc-frame">
+      <div><p class="zc-kicker">STREAM Triad · 1.6 GB arrays</p><h2 class="zc-title">One core already <em>saturates</em> DRAM</h2></div>
+      <div class="zc-cols zc-cols--wide-left">
+        <table class="zc-table">
+          <thead><tr><th>Threads</th><th>Placement</th><th class="num">Triad (GB/s)</th></tr></thead>
+          <tbody>
+            <tr class="is-hl"><td class="mono">1</td><td>cpu 2, 96 MB L3</td><td class="num best">31.6</td></tr>
+            <tr><td class="mono">1</td><td>cpu 27, 32 MB L3</td><td class="num">31.3</td></tr>
+            <tr><td class="mono">8</td><td>one CCD</td><td class="num">30.9</td></tr>
+            <tr><td class="mono">8</td><td>split across CCDs</td><td class="num">30.6</td></tr>
+            <tr><td class="mono">16</td><td>one per core</td><td class="num">30.2</td></tr>
+            <tr><td class="mono">32</td><td>all SMT threads</td><td class="num">29.6</td></tr>
+          </tbody>
+        </table>
+        <div class="stack">
+          <aside class="zc-callout zc-callout--insight"><span class="zc-callout__label">Key insight</span><p>More threads don't add bandwidth, and one CCD matches both. The limit is DRAM, not the core or the CCD link.</p></aside>
+          <aside class="zc-callout zc-callout--warning"><span class="zc-callout__label">! Accounting</span><p>STREAM leaves out write-allocate. Real Triad traffic ≈ 31.6 × 4/3 ≈ <span class="zc-hl">42 GB/s</span>.</p></aside>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="zc-slide" aria-label="Headroom">
+    <div class="zc-frame">
+      <div><p class="zc-kicker">Roofline</p><h2 class="zc-title">Half the ceiling, so <em>2×</em> is left</h2></div>
+      <div class="zc-cols zc-cols--wide-left">
+        <figure class="zc-chart" style="margin:0" id="headroom-chart">
+          <ul class="zc-legend"><li style="color:var(--series-1)"><i></i>measured GFLOP/s</li><li style="color:var(--series-2)"><i></i>DRAM ceiling</li></ul>
+          <svg viewBox="0 0 800 380" role="img" aria-label="GFLOP/s: bad loop 0.89, baseline 7.09, against a DRAM ceiling of about 14">
+            <line class="grid" x1="80" x2="780" y1="58.75" y2="58.75"/><line class="grid" x1="80" x2="780" y1="152.5" y2="152.5"/><line class="grid" x1="80" x2="780" y1="246.25" y2="246.25"/>
+            <line class="axis" x1="80" x2="780" y1="340" y2="340"/>
+            <text class="tick" x="68" y="346" text-anchor="end" font-size="18">0</text>
+            <text class="tick" x="68" y="252.25" text-anchor="end" font-size="18">5</text>
+            <text class="tick" x="68" y="158.5" text-anchor="end" font-size="18">10</text>
+            <text class="tick" x="68" y="64.75" text-anchor="end" font-size="18">15</text>
+            <g>
+              <rect class="bar s1 zc-grow" style="--i:0" x="150" y="323.3" width="160" height="16.7" rx="4"/>
+              <rect class="bar s1 zc-grow" style="--i:1" x="400" y="207.1" width="160" height="132.9" rx="4"/>
+            </g>
+            <line class="s2" x1="80" x2="780" y1="77.5" y2="77.5" stroke-width="3" stroke-dasharray="10 8"/>
+            <text class="val" x="780" y="66" text-anchor="end" font-size="20">≈ 14 at 42 GB/s</text>
+            <text class="val" x="230" y="311" text-anchor="middle" font-size="20">0.89</text>
+            <text class="val" x="480" y="195" text-anchor="middle" font-size="20">7.09</text>
+            <text class="tick" x="230" y="368" text-anchor="middle" font-size="18">bad loop</text>
+            <text class="tick" x="480" y="368" text-anchor="middle" font-size="18">L0 naive</text>
+          </svg>
+        </figure>
+        <div class="stack">
+          <div class="zc-stat">
+            <div class="zc-stat__value is-accent">50<small>%</small></div>
+            <div class="zc-stat__label">of real DRAM bandwidth the naive loop already uses: 21.3 of 42 GB/s</div>
+          </div>
+          <p class="zc-small">42 GB/s ÷ 24 B per point ≈ 1.75 G updates/s ≈ 14 GFLOP/s. Past that, only fewer bytes per point helps.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="zc-slide" aria-label="Topology">
+    <div class="zc-frame">
+      <div><p class="zc-kicker">Ryzen 9 9950X3D</p><h2 class="zc-title">Two CCDs, <em>two</em> cache sizes</h2></div>
+      <div class="zc-cols zc-cols--wide-left">
+        <table class="zc-table">
+          <thead><tr><th>Logical CPUs</th><th>Physical cores</th><th>CCD</th><th class="num">L3</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">0–7, 16–23</td><td class="mono">0–7</td><td>CCD0, V-Cache</td><td class="num best">96 MB</td></tr>
+            <tr><td class="mono">8–15, 24–31</td><td class="mono">8–15</td><td>CCD1</td><td class="num">32 MB</td></tr>
+          </tbody>
+          <caption>CPUs N and N+16 are the two SMT threads of one core. Every core has 48 KB L1d and 1 MB L2.</caption>
+        </table>
+        <div class="stack">
+          <aside class="zc-callout zc-callout--warning"><span class="zc-callout__label">! Pin every run</span><p>The bad-loop run migrated from cpu 1 to cpu 27 mid-benchmark: from a 96 MB L3 to a 32 MB one.</p></aside>
+          <p class="zc-small">At 512³ both CCDs are DRAM-bound. For tiling, the cache a tile has to fit in depends on which CCD the thread runs on.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="zc-slide zc-slide--section" aria-label="Part 3">
+    <div class="zc-frame zc-frame--center">
+      <p class="zc-kicker">Part 3</p>
+      <h2 class="zc-display">What's next</h2>
+    </div>
+  </section>
+
+  <section class="zc-slide" aria-label="Level 1">
+    <div class="zc-frame">
+      <div><p class="zc-kicker">Level 1 · single-thread optimization</p><h2 class="zc-title">Spend the <em>2×</em>, one change at a time</h2></div>
+      <ul class="zc-list">
+        <li class="zc-reveal" data-step="1">Cache blocking of the <code>j</code>/<code>k</code> loops; sweep tile sizes on both CCDs</li>
+        <li class="zc-reveal" data-step="2"><code>__restrict__</code>, then check on Godbolt whether the codegen changed</li>
+        <li class="zc-reveal" data-step="3">Confirm vectorization with <code>-fopt-info-vec</code>; explain every miss</li>
+        <li class="zc-reveal" data-step="4">Temporal blocking: <span class="zc-hl">the only way past the DRAM ceiling</span></li>
+      </ul>
+      <p class="zc-caption">Each change is logged with its speedup, % of STREAM, perf stat cache misses and roofline position.</p>
+    </div>
+  </section>
+
+  <section class="zc-slide" aria-label="Roadmap">
+    <div class="zc-frame">
+      <div><p class="zc-kicker">After Level 1</p><h2 class="zc-title">Then threads, then the <em>GPU</em></h2></div>
+      <div class="zc-cols">
+        <div class="stack">
+          <h3 class="zc-heading">Level 2 · OpenMP</h3>
+          <p class="zc-body">About a day. On this desktop one thread already saturates DRAM, so expect the thread count to buy almost nothing, and show why.</p>
+        </div>
+        <div class="stack">
+          <h3 class="zc-heading">Level 3 · CUDA</h3>
+          <p class="zc-body">On the LAN GPU box: naive kernel, then coalescing, then shared-memory tiling. Measured as a percentage of the card's peak bandwidth.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+</div>
+<script>
+(function () {
+  var deck = document.getElementById('deck');
+  var slides = [].slice.call(deck.children);
+  var title = document.title;
+  var slide = Math.min(Math.max((parseInt(location.hash.slice(1), 10) || 1) - 1, 0), slides.length - 1);
+  var step = 0;
+
+  slides.forEach(function (el, i) {
+    if (i === 0 || el.classList.contains('zc-slide--section')) return;
+    var footer = document.createElement('div');
+    footer.className = 'zc-footer';
+    footer.innerHTML = '<span>' + String(i + 1).padStart(2, '0') + '</span>' +
+      '<div class="zc-progress"><i style="--p:' + Math.round(100 * (i + 1) / slides.length) + '%"></i></div>' +
+      '<span>' + title + '</span>';
+    el.appendChild(footer);
+  });
+
+  // Steps come from data-step and data-hl values; several lines can share one data-hl.
+  function stepCount(el) {
+    return [].reduce.call(el.querySelectorAll('[data-step],[data-hl]'), function (max, b) {
+      return Math.max(max, +(b.dataset.step || b.dataset.hl));
+    }, 0);
+  }
+
+  function render() {
+    slides.forEach(function (el, i) {
+      var current = i === slide;
+      el.classList.toggle('is-current', current);
+      el.classList.toggle('is-past', i < slide);
+      el.setAttribute('aria-hidden', current ? 'false' : 'true');
+      el.querySelectorAll('[data-step]').forEach(function (b) { b.classList.toggle('is-in', current && +b.dataset.step <= step); });
+      el.querySelectorAll('[data-hl]').forEach(function (b) { b.classList.toggle('is-hl', current && +b.dataset.hl === step); });
+      el.querySelectorAll('.zc-code').forEach(function (code) { code.classList.toggle('is-focusing', !!code.querySelector('.is-hl')); });
+      el.querySelectorAll('.zc-chart').forEach(function (chart) { chart.classList.toggle('is-in', current); });
+    });
+    history.replaceState(null, '', '#' + (slide + 1));
+  }
+
+  function next() { if (step < stepCount(slides[slide])) step++; else if (slide < slides.length - 1) { slide++; step = 0; } render(); }
+  function prev() { if (step > 0) step--; else if (slide > 0) { slide--; step = stepCount(slides[slide]); } render(); }
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') { e.preventDefault(); next(); }
+    else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); prev(); }
+    else if (e.key === 't') {
+      var root = document.documentElement;
+      root.dataset.theme = root.dataset.theme === 'wave' ? 'lotus' : 'wave';
+    }
+  });
+  deck.addEventListener('click', function (e) { if (e.clientX > window.innerWidth / 3) next(); else prev(); });
+  render();
+})();
+</script>
+</body>
+</html>

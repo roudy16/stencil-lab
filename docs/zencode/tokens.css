@@ -1,0 +1,133 @@
+/* ZenCode tokens, generated from the design system's tokens.json. Do not edit by hand. */
+
+@font-face { font-family: "Instrument Serif"; src: url("fonts/instrument-serif-latin-400-normal.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "Instrument Serif"; src: url("fonts/instrument-serif-latin-400-italic.woff2") format("woff2"); font-weight: 400; font-style: italic; font-display: swap; }
+@font-face { font-family: "Instrument Sans"; src: url("fonts/instrument-sans-latin-wght-normal.woff2") format("woff2"); font-weight: 400 700; font-style: normal; font-display: swap; }
+@font-face { font-family: "Instrument Sans"; src: url("fonts/instrument-sans-latin-wght-italic.woff2") format("woff2"); font-weight: 400 700; font-style: italic; font-display: swap; }
+@font-face { font-family: "JetBrains Mono"; src: url("fonts/jetbrains-mono-latin-wght-normal.woff2") format("woff2"); font-weight: 100 800; font-style: normal; font-display: swap; }
+@font-face { font-family: "JetBrains Mono"; src: url("fonts/jetbrains-mono-latin-wght-italic.woff2") format("woff2"); font-weight: 100 800; font-style: italic; font-display: swap; }
+
+:root {
+  --font-display: "Instrument Serif", "Iowan Old Style", Georgia, serif;
+  --font-sans: "Instrument Sans", "Helvetica Neue", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --space-1: 8px;
+  --space-2: 16px;
+  --space-3: 24px;
+  --space-4: 32px;
+  --space-6: 48px;
+  --space-8: 64px;
+  --space-12: 96px;
+  --space-16: 128px;
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-full: 9999px;
+  --dur-fast: 160ms;
+  --dur-base: 320ms;
+  --dur-slow: 560ms;
+  --dur-stagger: 70ms;
+  --ease-glide: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-tide: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+}
+
+:root, [data-theme="wave"] {
+  color-scheme: dark;
+  --surface: #1f1f28;
+  --surface-sunk: #16161d;
+  --surface-raised: #2a2a37;
+  --surface-high: #363646;
+  --selection: #223249;
+  --line: #363646;
+  --line-strong: #686882;
+  --ink: #dcd7ba;
+  --ink-strong: #dcd7ba;
+  --ink-muted: #c8c093;
+  --ink-faint: #727169;
+  --accent: #7e9cd8;
+  --on-accent: #1f1f28;
+  --accent-wave: #2d4f67;
+  --accent-violet: #957fb8;
+  --highlight: #e6c384;
+  --accent-warm: #ffa066;
+  --success: #98bb6c;
+  --success-soft: #2b3328;
+  --warning: #ff9e3b;
+  --warning-soft: #49443c;
+  --danger: #e46876;
+  --danger-soft: #43242b;
+  --info: #7fb4ca;
+  --info-soft: #252535;
+  --syn-keyword: #957fb8;
+  --syn-function: #7e9cd8;
+  --syn-string: #98bb6c;
+  --syn-number: #d27e99;
+  --syn-constant: #ffa066;
+  --syn-identifier: #e6c384;
+  --syn-parameter: #b8b4d0;
+  --syn-type: #7aa89f;
+  --syn-operator: #c0a36e;
+  --syn-punct: #9cabca;
+  --syn-preproc: #e46876;
+  --syn-special: #7fb4ca;
+  --syn-comment: var(--ink-faint);
+  --series-1: #7e9cd8;
+  --series-2: #ffa066;
+  --series-3: #98bb6c;
+  --series-4: #d27e99;
+  --series-5: #7aa89f;
+  --series-6: #e6c384;
+  --shadow-float: 0 24px 48px -16px #0d0c0cb3;
+  --focus-ring: 0 0 0 3px #1f1f28, 0 0 0 6px #7e9cd8;
+}
+
+[data-theme="lotus"] {
+  color-scheme: light;
+  --surface: #f2ecbc;
+  --surface-sunk: #e5ddb0;
+  --surface-raised: #e7dba0;
+  --surface-high: #e4d794;
+  --selection: #cbcdd3;
+  --line: #d5cea3;
+  --line-strong: #7d7989;
+  --ink: #545464;
+  --ink-strong: #43436c;
+  --ink-muted: #615e52;
+  --ink-faint: #78776e;
+  --accent: #425d8f;
+  --on-accent: #f2ecbc;
+  --accent-wave: #bad0d7;
+  --accent-violet: #624c83;
+  --highlight: #645e2c;
+  --accent-warm: #9d4200;
+  --success: #4d662b;
+  --success-soft: #bad3b1;
+  --warning: #9d4200;
+  --warning-soft: #f9d791;
+  --danger: #b12941;
+  --danger-soft: #f5c0ae;
+  --info: #45616f;
+  --info-soft: #c7d7e0;
+  --syn-keyword: #624c83;
+  --syn-function: #425d8f;
+  --syn-string: #4d662b;
+  --syn-number: #974261;
+  --syn-constant: #9d4200;
+  --syn-identifier: #645e2c;
+  --syn-parameter: #5a54a0;
+  --syn-type: #43645e;
+  --syn-operator: #6e5b37;
+  --syn-punct: #25667a;
+  --syn-preproc: #b12941;
+  --syn-special: #35608a;
+  --syn-comment: var(--ink-faint);
+  --series-1: #425d8f;
+  --series-2: #9d4200;
+  --series-3: #4d662b;
+  --series-4: #974261;
+  --series-5: #43645e;
+  --series-6: #645e2c;
+  --shadow-float: 0 20px 40px -18px #54546459;
+  --focus-ring: 0 0 0 3px #f2ecbc, 0 0 0 6px #4d699b;
+}
