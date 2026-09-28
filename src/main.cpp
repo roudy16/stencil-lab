@@ -36,8 +36,9 @@ int main(int argc, char** argv) {
     }
 
     // NOTE: switch solver impls here
-    scr::NaiveStencilSolver solver(nx, ny, nz);
-    //scr::NaiveStencilSolverBadLoop solver(nx, ny, nz);
+    scr::TiledStencilSolver solver(nx, ny, nz);
+    // scr::NaiveStencilSolver solver(nx, ny, nz);
+    // scr::NaiveStencilSolverBadLoop solver(nx, ny, nz);
 
     scr::LabContext ctx{
         .solver = solver,
