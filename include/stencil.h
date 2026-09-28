@@ -194,6 +194,7 @@ public:
     }
 
     void step() override {
+        constexpr size_type x_tile_sz = 64;
         constexpr size_type y_tile_sz = 64;
         constexpr size_type z_tile_sz = 64;
 
@@ -207,12 +208,14 @@ public:
             for (size_type k_ = k; k_ < k + z_tile_sz; ++k_) {
                 for (size_type j = 1; j <= ny; j += y_tile_sz) {
                     for (size_type j_ = j; j_ < j + y_tile_sz; ++j_) {
-                        for (size_type i = 1; i <= nx; ++i) {
-                            const size_type c = index(i, j_, k_);
-                            const double neighbor_sum = u[c - 1] + u[c + 1] + u[c - y_stride] +
-                                                        u[c + y_stride] + u[c - z_stride] +
-                                                        u[c + z_stride];
-                            u_next[c] = center_weight * u[c] + r * neighbor_sum;
+                        for (size_type i = 1; i <= nx; i += x_tile_sz) {
+                            for (size_type i_ = i; i_ <= i + x_tile_sz; ++i_) {
+                                const size_type c = index(i_, j_, k_);
+                                const double neighbor_sum = u[c - 1] + u[c + 1] + u[c - y_stride] +
+                                                            u[c + y_stride] + u[c - z_stride] +
+                                                            u[c + z_stride];
+                                u_next[c] = center_weight * u[c] + r * neighbor_sum;
+                            }
                         }
                     }
                 }
