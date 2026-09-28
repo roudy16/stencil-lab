@@ -194,7 +194,7 @@ public:
     }
 
     void step() override {
-        constexpr size_type x_tile_sz = 64;
+        constexpr size_type x_tile_sz = 512;
         constexpr size_type y_tile_sz = 64;
         constexpr size_type z_tile_sz = 64;
 
@@ -205,11 +205,11 @@ public:
         double* u_next = next.get();
 
         for (size_type k = 1; k <= nz; k += z_tile_sz) {
-            for (size_type k_ = k; k_ < k + z_tile_sz; ++k_) {
-                for (size_type j = 1; j <= ny; j += y_tile_sz) {
-                    for (size_type j_ = j; j_ < j + y_tile_sz; ++j_) {
-                        for (size_type i = 1; i <= nx; i += x_tile_sz) {
-                            for (size_type i_ = i; i_ <= i + x_tile_sz; ++i_) {
+            for (size_type j = 1; j <= ny; j += y_tile_sz) {
+                for (size_type i = 1; i <= nx; i += x_tile_sz) {
+                    for (size_type k_ = k; k_ < k + z_tile_sz; ++k_) {
+                        for (size_type j_ = j; j_ < j + y_tile_sz; ++j_) {
+                            for (size_type i_ = i; i_ < i + x_tile_sz; ++i_) {
                                 const size_type c = index(i_, j_, k_);
                                 const double neighbor_sum = u[c - 1] + u[c + 1] + u[c - y_stride] +
                                                             u[c + y_stride] + u[c - z_stride] +

@@ -74,38 +74,39 @@ checksum  34778955.772421293
 <comments>
 Tested first-pass of tiling using 64x64x512 (z,y,x) dims
 </comments>
-date      2026-09-28 19:59:42 UTC
+date      2026-09-28 20:18:35 UTC
 host      pop-os
 cpu       AMD Ryzen 9 9950X3D 16-Core Processor, 32 logical
-ran on    cpu 13 -> cpu 13 (affinity: 32 cpus)
-caches    L1d 48K  L2 1024K  L3 32768K (cpu 13)
+ran on    cpu 29 -> cpu 11 (affinity: 32 cpus)
+caches    L1d 48K  L2 1024K  L3 32768K (cpu 29)
 memory    249.3 GiB
 kernel    7.1.5-76070105-generic
-governor  powersave
+governor  performance
 compiler  GNU 16.0.1
-build     RelWithDebInfo [-O2 -g -DNDEBUG] commit d76bd10
+build     RelWithDebInfo [-O2 -g -DNDEBUG] commit 93618a4-dirty
 solver    L1 tiled
 grid      512x512x512, 10 steps x 10 reps
-time      median 1.4397 s   p99 1.4583 s
-rate      7.46 GFLOP/s   22.37 GB/s (model)
+time      median 1.5324 s   p99 1.5426 s
+rate      7.01 GFLOP/s   21.02 GB/s (model)
 checksum  34778955.772421293
+
 
 == stencil-lab bench ==
 <comments>
-Tested tiling using 64x64x64 (z,y,x) dims
+This is the baseline but with 'performance' governor
 </comments>
-date      2026-09-28 20:05:46 UTC
+date      2026-09-28 20:21:48 UTC
 host      pop-os
 cpu       AMD Ryzen 9 9950X3D 16-Core Processor, 32 logical
-ran on    cpu 13 -> cpu 29 (affinity: 32 cpus)
-caches    L1d 48K  L2 1024K  L3 32768K (cpu 13)
+ran on    cpu 11 -> cpu 11 (affinity: 32 cpus)
+caches    L1d 48K  L2 1024K  L3 32768K (cpu 11)
 memory    249.3 GiB
 kernel    7.1.5-76070105-generic
-governor  powersave
+governor  performance
 compiler  GNU 16.0.1
-build     RelWithDebInfo [-O2 -g -DNDEBUG] commit d76bd10-dirty
-solver    L1 tiled
+build     RelWithDebInfo [-O2 -g -DNDEBUG] commit 93618a4-dirty
+solver    L0 naive
 grid      512x512x512, 10 steps x 10 reps
-time      median 1.4871 s   p99 1.4952 s
-rate      7.22 GFLOP/s   21.66 GB/s (model)
-checksum  34780820.620621368
+time      median 1.4926 s   p99 1.4966 s
+rate      7.19 GFLOP/s   21.58 GB/s (model)
+checksum  34778955.772421293
